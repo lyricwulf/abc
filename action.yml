@@ -1,5 +1,10 @@
-name: abc
-description: Apt, Brew, and Choco dependencies in one action.
+name: abc-install
+description: Install Apt, Brew, and Choco dependencies in one action.
+author: LyricWulf
+branding:
+  icon: package
+  color: orange
+
 inputs: 
   linux:  
     description: Apt dependencies
