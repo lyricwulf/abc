@@ -1,4 +1,4 @@
-name: abc-install
+name: ABC Install
 description: Install Apt, Brew, and Choco dependencies in one action.
 author: LyricWulf
 branding:
