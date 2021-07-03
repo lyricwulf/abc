@@ -1,0 +1,70 @@
+name: abc
+description: Apt, Brew, and Choco dependencies in one action.
+inputs: 
+  linux:  
+    description: Apt dependencies
+    required: false
+  macos:
+    description: Brew dependencies
+    required: false
+  windows:
+    description: Choco dependencies
+    required: false
+  unix:
+    description: Unix-like dependencies
+    required: false
+  all:
+    description: All dependencies
+    required: false
+  verbose: 
+    description: Verbose output
+    required: false
+runs: 
+  using: composite
+  steps:
+  - shell: bash
+    run: |
+      # Set output verbosity
+      [ "${{ inputs.verbose }}" != "" ] && 
+      OUT=${1:-/dev/stdout} || 
+      OUT=/dev/null
+
+      # Parse shareable dependencies
+      LINUX_DEPENDENCIES="${{inputs.all}} ${{inputs.unix}} ${{inputs.linux}}"
+      MACOS_DEPENDENCIES="${{inputs.all}} ${{inputs.unix}} ${{inputs.macos}}"
+      WINDOWS_DEPENDENCIES="${{inputs.all}} ${{inputs.windows}}"
+
+      case "${{ runner.os }}" in
+
+      Linux)
+        if [ -n ${LINUX_DEPENDENCIES// } ]
+        then 
+          echo "Updating apt..."
+          sudo apt-get update > $OUT
+          echo "Installing Linux dependencies:"
+          echo "  $LINUX_DEPENDENCIES"
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y $LINUX_DEPENDENCIES > $OUT
+        fi
+      ;;
+
+      macOS)
+        if [ -n ${MACOS_DEPENDENCIES// } ]
+        then
+          echo "Updating brew..."
+          brew update > $OUT
+          echo "Installing macOS dependencies:"
+          echo "  $MACOS_DEPENDENCIES"
+          brew install $MACOS_DEPENDENCIES > $OUT
+        fi
+      ;;
+
+      Windows)
+        if [ -n ${WINDOWS_DEPENDENCIES// } ]
+        then
+          echo "Installing Windows dependencies:"
+          echo "  $WINDOWS_DEPENDENCIES"
+          choco install -y $WINDOWS_DEPENDENCIES > $OUT
+        fi
+      ;;
+
+      esac
