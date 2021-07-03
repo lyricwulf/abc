@@ -22,3 +22,7 @@ jobs:
           unix: lib-for-linux-and-mac not-for-windows
           all: cross-platform-lib
 ```
+
+## Todo
+- Add [automatic dependency caching](https://docs.github.com/en/actions/guides/caching-dependencies-to-speed-up-workflows)
+- Put bash script into a separate file, passing the dependency lists.
