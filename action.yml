@@ -42,7 +42,7 @@ runs:
       case "${{ runner.os }}" in
 
       Linux)
-        if [ -n ${LINUX_DEPENDENCIES// } ]
+        if [ -n "${LINUX_DEPENDENCIES// }" ]
         then 
           echo "Updating apt..."
           sudo apt-get update > $OUT
@@ -53,7 +53,7 @@ runs:
       ;;
 
       macOS)
-        if [ -n ${MACOS_DEPENDENCIES// } ]
+        if [ -n "${MACOS_DEPENDENCIES// }" ]
         then
           echo "Updating brew..."
           brew update > $OUT
@@ -64,7 +64,7 @@ runs:
       ;;
 
       Windows)
-        if [ -n ${WINDOWS_DEPENDENCIES// } ]
+        if [ -n "${WINDOWS_DEPENDENCIES// }" ]
         then
           echo "Installing Windows dependencies:"
           echo "  $WINDOWS_DEPENDENCIES"
