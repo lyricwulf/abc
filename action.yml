@@ -21,6 +21,9 @@ inputs:
   all:
     description: All dependencies
     required: false
+  upgrade-all:
+    description: Upgrade ALL installed packages before installing deps
+    required: false
   verbose: 
     description: Verbose output (DEPRECATED AND HAS NO EFFECT)
     required: false
@@ -104,6 +107,7 @@ runs:
     env:
       ABC_DEPS: ${{ steps.abc-init.outputs.deps }}
       ABC_CFG_VERBOSE: ${{ inputs.verbose }}
+      ABC_CFG_UPGRADE_ALL: ${{ inputs.upgrade-all }}
       # ABC_CACHE_HIT: steps.abc-cache.outputs.cache-hit != 'true'
       # DEBIAN_FRONTEND: noninteractive
     run: |

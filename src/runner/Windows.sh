@@ -1,4 +1,11 @@
 #!/bin/bash
+
+echo "Upgrading all choco packages..."
+if [ "$ABC_CFG_UPGRADE_ALL" == "true" ] 
+then
+    choco upgrade all
+fi
+
 echo "Installing Windows dependencies:"
 echo "  $ABC_DEPS"
 # Choco version syntax is libxyz --version 1.2.3
