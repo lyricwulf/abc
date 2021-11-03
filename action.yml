@@ -5,8 +5,8 @@ branding:
   icon: package
   color: orange
 
-inputs: 
-  linux:  
+inputs:
+  linux:
     description: Apt dependencies
     required: false
   macos:
@@ -24,117 +24,116 @@ inputs:
   upgrade-all:
     description: Upgrade ALL installed packages before installing deps
     required: false
-  verbose: 
+  verbose:
     description: Verbose output (DEPRECATED AND HAS NO EFFECT)
     required: false
   no-cache:
     description: Don't use cache (cache not implemented yet)
     required: false
-runs: 
+runs:
   using: composite
   steps:
-  - name: Setup | Resolve runner dependencies
-    id: abc-init
-    shell: bash
-    env: 
-      ABC_PKGS_ALL: ${{ inputs.all }}
-      ABC_PKGS_LINUX: ${{ inputs.linux }}
-      ABC_PKGS_MACOS: ${{ inputs.macos }}
-      ABC_PKGS_WINDOWS: ${{ inputs.windows }}
-      ABC_PKGS_UNIX: ${{ inputs.unix }}
-    run: |
-      # Check if ABC yml exists
-      ABC_YAML_FILE="$GITHUB_WORKSPACE/.abc.yml"
-      if [ -e "$ABC_YAML_FILE" ]
-      then
-        echo "Using .abc.yml file."
-        echo "This feature is experimental! Please report any issues at https://github.com/LyricWulf/abc/issues"
-        . "$GITHUB_ACTION_PATH/src/yaml.sh"
-        create_variables "$ABC_YAML_FILE" "ABC_YML_"
-        ABC_PKGS_ALL="$ABC_PKGS_ALL $ABC_YML_ALL" 
-        ABC_PKGS_LINUX="$ABC_PKGS_LINUX $ABC_YML_LINUX"
-        ABC_PKGS_MACOS="$ABC_PKGS_MACOS $ABC_YML_MACOS"
-        ABC_PKGS_WINDOWS="$ABC_PKGS_WINDOWS $ABC_YML_WINDOWS"
-        ABC_PKGS_UNIX="$ABC_PKGS_UNIX $ABC_YML_UNIX"
-      fi
+    - name: Setup | Resolve runner dependencies
+      id: abc-init
+      shell: bash
+      env:
+        ABC_PKGS_ALL: ${{ inputs.all }}
+        ABC_PKGS_LINUX: ${{ inputs.linux }}
+        ABC_PKGS_MACOS: ${{ inputs.macos }}
+        ABC_PKGS_WINDOWS: ${{ inputs.windows }}
+        ABC_PKGS_UNIX: ${{ inputs.unix }}
+      run: |
+        # Check if ABC yml exists
+        ABC_YAML_FILE="$GITHUB_WORKSPACE/.abc.yml"
+        if [ -e "$ABC_YAML_FILE" ]
+        then
+          echo "Using .abc.yml file."
+          echo "This feature is experimental! Please report any issues at https://github.com/LyricWulf/abc/issues"
+          . "$GITHUB_ACTION_PATH/src/yaml.sh"
+          create_variables "$ABC_YAML_FILE" "ABC_YML_"
+          ABC_PKGS_ALL="$ABC_PKGS_ALL $ABC_YML_ALL" 
+          ABC_PKGS_LINUX="$ABC_PKGS_LINUX $ABC_YML_LINUX"
+          ABC_PKGS_MACOS="$ABC_PKGS_MACOS $ABC_YML_MACOS"
+          ABC_PKGS_WINDOWS="$ABC_PKGS_WINDOWS $ABC_YML_WINDOWS"
+          ABC_PKGS_UNIX="$ABC_PKGS_UNIX $ABC_YML_UNIX"
+        fi
 
-      # Resolve dependencies list
-      ABC_DEPS=""
-      case "$RUNNER_OS" in
-      Linux)
-        ABC_DEPS="$ABC_PKGS_ALL $ABC_PKGS_UNIX $ABC_PKGS_LINUX" 
-        ABC_CACHE_DIRECTORY="/var/cache/apt"
-      ;;
-      macOS)
-        ABC_DEPS="$ABC_PKGS_ALL $ABC_PKGS_UNIX $ABC_PKGS_MACOS" 
-        ABC_CACHE_DIRECTORY="~/Library/Caches/Homebrew $'\n'
-                             /Library/Caches/Homebrew"
-      ;;
-      Windows)
-        ABC_DEPS="$ABC_PKGS_ALL $ABC_PKGS_WINDOWS"
-        ABC_CACHE_DIRECTORY="~/AppData/Local/Temp/chocolatey"
-      ;;
-      esac
-      
-      # Remove extra spaces
-      ABC_DEPS=$(echo -n "${ABC_DEPS}" | xargs)
-      
-      echo "::set-output name=deps::$ABC_DEPS"
+        # Resolve dependencies list
+        ABC_DEPS=""
+        case "$RUNNER_OS" in
+        Linux)
+          ABC_DEPS="$ABC_PKGS_ALL $ABC_PKGS_UNIX $ABC_PKGS_LINUX" 
+          ABC_CACHE_DIRECTORY="/var/cache/apt"
+        ;;
+        macOS)
+          ABC_DEPS="$ABC_PKGS_ALL $ABC_PKGS_UNIX $ABC_PKGS_MACOS" 
+          ABC_CACHE_DIRECTORY="~/Library/Caches/Homebrew $'\n'
+                               /Library/Caches/Homebrew"
+        ;;
+        Windows)
+          ABC_DEPS="$ABC_PKGS_ALL $ABC_PKGS_WINDOWS"
+          ABC_CACHE_DIRECTORY="~/AppData/Local/Temp/chocolatey"
+        ;;
+        esac
 
-      ## TODO: Cache package directories
-      ## Currently cannot use composite step inside a composite action :(
-      ## This is a limitation of Github Actions.
-      ## Thus, in order to cache, we need to switch ABC to node (js).
-      # echo "::set-output name=cache_dir::$ABC_CACHE_DIRECTORY"
-      # ABC_DEPS_HASH=$(echo -n "${ABC_DEPS}" | openssl dgst -sha1 | awk '{ print $NF }')
-      # echo "::set-output name=hash::$ABC_DEPS_HASH"
+        # Remove extra spaces
+        ABC_DEPS=$(echo -n "${ABC_DEPS}" | xargs)
 
-  ## Currently cannot use composite step inside a composite action :(
-  ## This is a limitation of Github Actions.
-  ## TODO: In order to cache, we need to switch ABC to node (js).
-  ## This is not **that** important, since the updating does not use a ton of time,
-  ## but it would still be a very nice optmization!
-  # - name: Setup | Package cache
-  #   id: abc-cache
-  #   uses: actions/cache@v2
-  #   with:
-  #     path: ${{ steps.abc-init.outputs.cache_dir }}
-  #     key: ${{ runner.os }}-abc-${{ steps.abc-init.outputs.hash }}
-  #     restore-keys: ${{ runner.os }}-abc-
+        echo "::set-output name=deps::$ABC_DEPS"
 
-  - name: Install | Abc
-    shell: bash
-    env:
-      ABC_DEPS: ${{ steps.abc-init.outputs.deps }}
-      ABC_CFG_VERBOSE: ${{ inputs.verbose }}
-      ABC_CFG_UPGRADE_ALL: ${{ inputs.upgrade-all }}
-      # ABC_CACHE_HIT: steps.abc-cache.outputs.cache-hit != 'true'
-      # DEBIAN_FRONTEND: noninteractive
-    run: |
-      # Set output verbosity
-      # We do this here because ${1:-/dev/stdout} doesn't work in env section
-      [ "$ABC_CFG_VERBOSE" == "true" ] && 
-      ABC_OUT=/dev/null || 
-      ABC_OUT="${1:-/dev/stdout}"
+        ## TODO: Cache package directories
+        ## Currently cannot use composite step inside a composite action :(
+        ## This is a limitation of Github Actions.
+        ## Thus, in order to cache, we need to switch ABC to node (js).
+        # echo "::set-output name=cache_dir::$ABC_CACHE_DIRECTORY"
+        # ABC_DEPS_HASH=$(echo -n "${ABC_DEPS}" | openssl dgst -sha1 | awk '{ print $NF }')
+        # echo "::set-output name=hash::$ABC_DEPS_HASH"
 
-      # Ensure the runner script exists
-      ABC_PLATFORM_SCRIPT="$GITHUB_ACTION_PATH/src/runner/$RUNNER_OS.sh"
-      if [ ! -e "$ABC_PLATFORM_SCRIPT" ]
-      then
-        echo "*** ABC *** $RUNNER_OS is not supported by ABC"
-        exit 0
-      fi
+    ## Currently cannot use composite step inside a composite action :(
+    ## This is a limitation of Github Actions.
+    ## TODO: In order to cache, we need to switch ABC to node (js).
+    ## This is not **that** important, since the updating does not use a ton of time,
+    ## but it would still be a very nice optmization!
+    # - name: Setup | Package cache
+    #   id: abc-cache
+    #   uses: actions/cache@v2
+    #   with:
+    #     path: ${{ steps.abc-init.outputs.cache_dir }}
+    #     key: ${{ runner.os }}-abc-${{ steps.abc-init.outputs.hash }}
+    #     restore-keys: ${{ runner.os }}-abc-
 
-      # Ensure there are any dependencies
-      if [ ! -n "${ABC_DEPS// }" ]
-      then 
-        echo "*** ABC *** No dependencies to install on $RUNNER_OS"
-        exit 0
-      fi
+    - name: Install | Abc
+      shell: bash
+      env:
+        ABC_DEPS: ${{ steps.abc-init.outputs.deps }}
+        ABC_CFG_VERBOSE: ${{ inputs.verbose }}
+        ABC_CFG_UPGRADE_ALL: ${{ inputs.upgrade-all }}
+        # ABC_CACHE_HIT: steps.abc-cache.outputs.cache-hit != 'true'
+        # DEBIAN_FRONTEND: noninteractive
+      run: |
+        # Set output verbosity
+        # We do this here because ${1:-/dev/stdout} doesn't work in env section
+        [ "$ABC_CFG_VERBOSE" == "true" ] && 
+        ABC_OUT=/dev/null || 
+        ABC_OUT="${1:-/dev/stdout}"
 
-      echo "*** ABC *** Installing $RUNNER_OS dependencies:"
-      echo "        ***   $ABC_DEPS"
-      
-      # Install dependencies!
-      . "$ABC_PLATFORM_SCRIPT"
-      
+        # Ensure the runner script exists
+        ABC_PLATFORM_SCRIPT="$GITHUB_ACTION_PATH/src/runner/$RUNNER_OS.sh"
+        if [ ! -e "$ABC_PLATFORM_SCRIPT" ]
+        then
+          echo "*** ABC *** $RUNNER_OS is not supported by ABC"
+          exit 0
+        fi
+
+        # Ensure there are any dependencies
+        if [ ! -n "${ABC_DEPS// }" ]
+        then 
+          echo "*** ABC *** No dependencies to install on $RUNNER_OS"
+          exit 0
+        fi
+
+        echo "*** ABC *** Installing $RUNNER_OS dependencies:"
+        echo "        ***   $ABC_DEPS"
+
+        # Install dependencies!
+        . "$ABC_PLATFORM_SCRIPT"
